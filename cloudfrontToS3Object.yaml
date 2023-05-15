@@ -1,0 +1,45 @@
+Transform: S3Objects
+
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: BucketOwnerPreferred
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  MyImageObject:
+    Type: AWS::S3::Object
+    Properties:
+      Target:
+        Bucket: !Ref MyBucket
+        Key: index.html
+      Body: |
+        It is working!!!
+
+  MyDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - Id: my-bucket-origin
+            DomainName: !GetAtt MyBucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: my-bucket-origin
+          ViewerProtocolPolicy: allow-all
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        PriceClass: PriceClass_100
+Outputs:
+  CloudFrontURL:
+    Value: !Join ['', ['https://', !GetAtt MyDistribution.DomainName, '/index.html']]
